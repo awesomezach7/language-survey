@@ -9,11 +9,6 @@ local ip, port = server:getsockname()
 print("Please telnet to localhost on port " .. port)
 -- loop forever waiting for clients
 local players = {}
-function multiple(x, string)
-  local group = {}
-  for i = 1, x do table.insert(group, string) end
-  return group
-end
 local rooms = {
 Death = {description = "You are dead and are staring straight at a console on a wall.  It asks for a password.  Enter by typing \"enter\" and then an integer passcode.", exits = {}, players = {}, items = {}},
 
@@ -28,7 +23,7 @@ Eastcenter = {description = "This appears to be a place once lived in, but not w
 Westcenter = {description = "The curve of the roof here makes you realize that you are in a large enclosure enclosing all areas you have been so far.  There is a hole here, but is very melted, and you decide not to get close.  Looking around you, there is a small rover-like vehicle that you are unable to activate in any way, but it seems perfectly suited to go through the hole.  Perhaps it made the hole?  Exits are East and South, which seems to have a cliff.", exits = {East = "Start", South = "Death"}, players = {}, items = {"Paper Note"}}
 }
 
-function useinput(line, player)
+local function useinput(line, player)
   if line == "help" then
     if math.random(1, 100) > 1 then
       player.client:send("You can interact with the small world of this text adventure by entering commands.  Right now, you should type \"look\" to learn more about the area you are in.  Other commands are move, to move between rooms; get, to take items from the room; drop, to put items in the room; inventory, to see your inventory; say, to talk to other players in your room; quit, to leave the game; and help, which in most cases displays this message.  There are also some other commands that are explained when they can be used.\n")
@@ -106,7 +101,7 @@ function useinput(line, player)
   end
 end
 
-function uniquenameprompt(client)
+local function uniquenameprompt(client)
   -- receive the line
   local line, err = client:receive()
   -- if there was no error, and the name is unique, add player to table, if not unique, rerun the function
