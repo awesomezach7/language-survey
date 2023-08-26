@@ -104,21 +104,15 @@
    a (player.client:send (.. a " is not a command\n")))))
 
 (fn uniquenameprompt [client]
-  (case client:receive
-    err (do
-      (for [i 1 (length players)]
-        (when (= line (. (. players i) :name))
-          (client:send "Player name already in use.\n")
-          (uniquenameprompt client)
-          (lua "return ")))
-      (local player {})
-      (set player.name line)
-      (set player.room rooms.Start)
-      (table.insert rooms.Start.players player.name)
-      (set player.inventory {})
-      (set player.client client)
-      (table.insert players player)
-      (client:send "Welcome to the game!\n"))))
+  (case (client:receive)
+    line (case (lume.match players (fn [p] (= p.name line)))
+           p (do (client:send "Player name already in use.\n")
+                 (uniquenameprompt client))
+           nil (let [player {:name line :room rooms.Start
+                             :inventory {} : client}]
+                 (table.insert rooms.Start.players player.name)
+                 (table.insert players player)
+                 (client:send "Welcome to the game!\n")))))
 
 (while true
   (local client (server:accept))
@@ -128,8 +122,9 @@
        (a:send "Enter player name within 10 seconds\n")
        (uniquenameprompt a)
        (a:settimeout 0.01))
-   nil (do
-        (each [i player (ipairs players)]
-        (local (line err) (player.client:receive))
-        (when (= err :closed) (table.remove players i))
-        (when line (useinput line player))))))
+   nil (each [i player (ipairs players)]
+        (case (player.client:receive)
+         (nil :closed) (do
+           (lume.remove player.room.players player.name)
+           (table.remove players i))
+         line (useinput line player)))))
