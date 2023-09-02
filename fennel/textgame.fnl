@@ -40,91 +40,107 @@
 
 (fn useinput [line player]
   (case (lume.first (lume.split line))
-   nil (player.client:send "Please enter a command, like help.\n")
-   "help" (do (case (math.random 1 100)
-       1 (player.client:send "You can interact with the small world of this text adventure by entering commands.  Right now, you should type \"look\" to learn more about the area you are in.  Other commands are move, to move between rooms; get, to take items from the room; drop, to put items in the room; inventory, to see your inventory; say, to talk to other players in your room; quit, to leave the game; and help, which in most cases displays this message.  There are also some other commands that are explained when they can be used.\n")
-       a (player.client:send "youcaninteractwiththesmallworldofthistextadventurebyenteringcommandsrightnowyoushouldtypelooktolearnmoreabouttheareayouarein othercommandsaremovetomovebetweenroomsgettotakeitemsfromtheroomdroptoputitemsintheroominventorytoseeyourinventorysaytotalktootherplayersinyourroomquittoleavethegame and help, which (almost) never displays this message.  Type help again if this is all you have seen.\n")))
-   "look" (do
-      (player.client:send (.. player.room.description "\nItems in the room: "
-                              (table.concat player.room.items ", ")
-                              "\nPlayers in the room: "
-                              (table.concat player.room.players ", ") "\n")))
-   "enter " (match [player.room (string.sub line 7)]
-              [rooms.Death "12345"]  (do 
-                (player.client:send "You have entered the code correctly, by \"pure chance.\"  You have power over all of existence now, according to the screen in front of you.  You restore your items, but then realize a grue is behind you, likely also sent here by dying.  It gets aggravated, and tries to attack you, but you quickly change the room you are in to the room you started at on the console.  You find yourself in a very different area, and are stunned for a suprisingly long period as you teleport to the starting area.  You are safe.\n")
-              (set player.room rooms.Start))
-              [rooms.Death _] (do
-                (player.client:send "You entered the code incorrectly.  You swivel your head to find a grue behind you, and it quickly eats you.  You find yourself in an infinite blackness, and are no longer in death.  You are in what death is to dead people.  It is relaxing yet boring.
+    nil (player.client:send "Please enter a command, like help.\n")
+    :help (do
+            (case (math.random 1 100)
+              1
+              (player.client:send "youcaninteractwiththesmallworldofthistextadventurebyenteringcommandsrightnowyoushouldtypelooktolearnmoreabouttheareayouarein othercommandsaremovetomovebetweenroomsgettotakeitemsfromtheroomdroptoputitemsintheroominventorytoseeyourinventorysaytotalktootherplayersinyourroomquittoleavethegame and help, which (almost) never displays this message.  Type help again if this is all you have seen.
 ")
-              (player.client:close))
-   "die" (do
-        (player.client:send "Easter Egg Found!  You are dead.\n")
-        (set player.room rooms.Death))
-   "move " (do
-      (let [direction (string.sub line 6)
-            newroom (case direction
-                      :north player.room.exits.North
-                      :east player.room.exits.East
-                      :south player.room.exits.South
-                      :west player.room.exits.West)]
-        (case newroom
-            aroom (do
-                    (lume.remove player.room.players player.name) ;; remove player
-                    (set player.room
-                      (assert (. rooms aroom) (.. "room not found " aroom))) ;; move player
-                    (table.insert player.room.players player.name)) ;; add player
-            nil (player.client:send "You cannot go that way.  Sorry!\n"))))
-   "say " (do
-      (let [statement (string.sub line 5)]
-        (each [a competitor (ipairs players)]
-          (match competitor.name
-            player.name :do-nothing
-            _ (competitor.client:send (.. player.name " says: " statement "\n")))))
-      (string.find line "^get ")
-      (let [item (string.sub line 5)]
-        (case (lume.find player.room.items item)
-          i (do
-              (table.remove player.room.items i)
-              (table.insert player.inventory item)
-              (player.client:send "Item acquired!\n"))
-          nil
-          (player.client:send "That item does not exist in this room.  Try using look again.  Perhaps another player took it?\n"))))
-   "drop " (do
-      (let [item (string.sub line 6)]
-        (case (lume.find player.room.items item)
-          i (do
-              (table.remove player.inventory i)
-              (table.insert player.room.items item)
-              (player.client:send "Item dropped\n"))
-          nil
-          (player.client:send "You do not have that item.\n"))))
-   "inventory" (do
-      (player.client:send (.. "You have these items: "
-                              (table.concat player.inventory ", ") "\n")))
-   a (player.client:send (.. a " is not a command\n")))))
+              a
+              (player.client:send "You can interact with the small world of this text adventure by entering commands.  Right now, you should type \"look\" to learn more about the area you are in.  Other commands are move, to move between rooms; get, to take items from the room; drop, to put items in the room; inventory, to see your inventory; say, to talk to other players in your room; and help, which in most cases displays this message.  There are also some other commands that are explained when they can be used.
+")))
+    :look (do 
+            (player.client:send (.. player.room.description
+                                    "\nItems in the room: "
+                                    (table.concat player.room.items ", ")
+                                    "\nPlayers in the room: "
+                                    (table.concat player.room.players ", ") "\n")))
+    :enter (match [player.room (string.sub line 7)]
+             [rooms.Death :12345] (do
+                                    (player.client:send "You have entered the code correctly, by \"pure chance.\"  You have power over all of existence now, according to the screen in front of you.  You restore your items, but then realize a grue is behind you, likely also sent here by dying.  It gets aggravated, and tries to attack you, but you quickly change the room you are in to the room you started at on the console.  You find yourself in a very different area, and are stunned for a suprisingly long period as you teleport to the starting area.  You are safe.
+")
+                                    (set player.room rooms.Start))
+             [rooms.Death _] (do
+                               (player.client:send "You entered the code incorrectly.  You swivel your head to find a grue behind you, and it quickly eats you.  You find yourself in an infinite blackness, and are no longer in death.  You are in what death is to dead people.  It is relaxing yet boring.
+")
+                               (player.client:close)))
+    :die (do
+           (player.client:send "Easter Egg Found!  You are dead.\n")
+           (set player.room rooms.Death))
+    :move (do
+            (let [direction (string.sub line 6)
+                  newroom (case direction
+                            :north player.room.exits.North
+                            :east player.room.exits.East
+                            :south player.room.exits.South
+                            :west player.room.exits.West)]
+              (case newroom
+                aroom
+                (do
+                  (lume.remove player.room.players player.name)
+                  ;; remove player
+                  (set player.room
+                       (assert (. rooms aroom) (.. "room not found " aroom)))
+                  ;; move player
+                  (table.insert player.room.players player.name))
+                ;; add player
+                nil
+                (player.client:send "You cannot go that way.  Sorry!\n"))))
+    :say (let [statement (string.sub line 5)]
+           (each [a competitor (ipairs players)]
+             (match competitor.name
+               player.name :do-nothing
+               _ (competitor.client:send (.. player.name " says: " statement
+                                             "\n")))))
+    :get (let [item (string.sub line 5)]
+           (case (lume.find player.room.items item)
+             i (do
+                 (table.remove player.room.items i)
+                 (table.insert player.inventory item)
+                 (player.client:send "Item acquired!\n"))
+             nil
+             (player.client:send "That item does not exist in this room.  Try using look again.  Perhaps another player took it?
+")))
+    :drop (let [item (string.sub line 6)]
+            (case (lume.find player.inventory item)
+              i (do
+                  (table.remove player.inventory i)
+                  (table.insert player.room.items item)
+                  (player.client:send "Item dropped\n"))
+              nil (player.client:send "You do not have that item.\n")))
+    :inventory (do
+                 (player.client:send (.. "You have these items: "
+                                         (table.concat player.inventory ", ")
+                                         "\n")))
+    a (player.client:send (.. a " is not a command\n"))))
 
 (fn uniquenameprompt [client]
   (case (client:receive)
     line (case (lume.match players (fn [p] (= p.name line)))
-           p (do (client:send "Player name already in use.\n")
-                 (uniquenameprompt client))
-           nil (let [player {:name line :room rooms.Start
-                             :inventory {} : client}]
+           p (do
+               (client:send "Player name already in use.\n")
+               (uniquenameprompt client))
+           nil (let [player {:name line
+                             :room rooms.Start
+                             :inventory {}
+                             : client}]
                  (table.insert rooms.Start.players player.name)
                  (table.insert players player)
                  (client:send "Welcome to the game!\n")))))
 
 (while true
   (local client (server:accept))
-  (case client 
-   a (do
-       (a:settimeout 10)
-       (a:send "Enter player name within 10 seconds\n")
-       (uniquenameprompt a)
-       (a:settimeout 0.01))
-   nil (each [i player (ipairs players)]
-        (case (player.client:receive)
-         (nil :closed) (do
-           (lume.remove player.room.players player.name)
-           (table.remove players i))
-         line (useinput line player)))))
+  (case client
+    a (do
+        (a:settimeout 10)
+        (a:send "Enter player name within 10 seconds\n")
+        (uniquenameprompt a)
+        (a:settimeout 0.01))
+    nil (each [i player (ipairs players)]
+          (case (player.client:receive)
+            (nil :closed) (do
+                            (each [i item (ipairs player.inventory)]
+                              (table.insert player.room.items item))
+                            (lume.remove player.room.players player.name)
+                            (table.remove players i))
+            line (useinput line player)))))
